@@ -17,12 +17,15 @@ else
 	endif
 endif
 
-all: dynamic_driver_client
+all: test
 
 dynamic_driver_client: dynamic_driver_client.c
+	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
+
+test: test.c
 	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 .PHONY: clean
 
 clean:
-	rm dynamic_driver_client
+	rm test
