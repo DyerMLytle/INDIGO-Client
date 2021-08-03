@@ -6,11 +6,13 @@
 #include <indigo/indigo_bus.h>
 #include <indigo/indigo_client.h>
 
-#define CCD_SIMULATOR "CCD Imager Simulator"
 #define SBIG_CCD "SBIG ST-10 CCD #0"
+#define SBIG_GUIDER_CCD "SBIG ST-10 Guider CCD #0"
+#define SBIG_GUIDER_PORT "SBIG ST-10 Guider Port #0"
+#define SBIG_FILTER_WHEEL "SBIG CFW-10 #0"
+#define SBIG_ETHERNET "SBIG Ethernet Device"
 
 static bool connected = false;
-static int count = 2;
 
 static indigo_result client_attach(indigo_client* client) {
   indigo_log("attached to INDIGO bus...");
@@ -21,81 +23,16 @@ static indigo_result client_attach(indigo_client* client) {
 static indigo_result client_define_property(indigo_client* client,
   indigo_device* device, indigo_property* property,
   const char* message) {
-  // printf("prop-device = %s\n", property->device);
-  // printf("prop-name = %s\n", property->name);
-  if(strcmp(property->device, CCD_SIMULATOR))
-    return INDIGO_OK;
-  if(!strcmp(property->name, CONNECTION_PROPERTY_NAME)) {
-    if(indigo_get_switch(property, CONNECTION_CONNECTED_ITEM_NAME)) {
-      connected = true;
-      indigo_log("already connected...");
-    } else {
-      printf("Connecting to the ccd simulator now\n");
-      indigo_device_connect(client, CCD_SIMULATOR);
-      return INDIGO_OK;
-    }
-  }
-  if(!strcmp(property->name, CCD_IMAGE_PROPERTY_NAME)) {
-    if(device->version >= INDIGO_VERSION_2_0) {
-      printf("enable blob URL\n");
-      indigo_enable_blob(client, property, INDIGO_ENABLE_BLOB_URL);
-    } else {
-      printf("enable blob ALSO\n");
-      indigo_enable_blob(client, property, INDIGO_ENABLE_BLOB_ALSO);
-    }
-  }
+  printf("define property: device = %s, name = %s\n",
+    property->device, property->name);
   return INDIGO_OK;
 }
 
 static indigo_result client_update_property(indigo_client* client,
   indigo_device* device, indigo_property* property,
   const char* message) {
-  // printf("prop-device = %s\n", property->device);
-  printf("prop-name = %s\n", property->name);
-  if(strcmp(property->device, CCD_SIMULATOR))
-    return INDIGO_OK;
-  static const char* items[] = { CCD_EXPOSURE_ITEM_NAME };
-  static double values[] = { 3.0 };
-  if(!strcmp(property->name, CONNECTION_PROPERTY_NAME) && property->state == INDIGO_OK_STATE) {
-    if(indigo_get_switch(property, CONNECTION_CONNECTED_ITEM_NAME)) {
-      if(!connected) {
-        connected = true;
-        indigo_log("connected...");
-        indigo_change_number_property(client, CCD_SIMULATOR, CCD_EXPOSURE_PROPERTY_NAME,
-          1, items, values);
-      }
-    } else {
-      if(connected) {
-        indigo_log("disconnected...");
-        connected = false;
-      }
-    }
-    return INDIGO_OK;
-  }
-  if(!strcmp(property->name, CCD_IMAGE_PROPERTY_NAME) && property->state == INDIGO_OK_STATE) {
-    if(property->items[0].blob.value) {
-      char name[32];
-      sprintf(name, "img_%02d.fits", count);
-      FILE* f = fopen(name, "wb");
-      fwrite(property->items[0].blob.value, property->items[0].blob.size, 1, f);
-      fclose(f);
-      indigo_log("image saved to %s...", name);
-    }
-  }
-  if(!strcmp(property->name, CCD_EXPOSURE_PROPERTY_NAME)) {
-    if(property->state == INDIGO_BUSY_STATE) {
-      indigo_log("exposure %gs...", property->items[0].number.value);
-    } else if(property->state == INDIGO_OK_STATE) {
-      indigo_log("exposure done...");
-      if(--count > 0) {
-        indigo_change_number_property(client, CCD_SIMULATOR, CCD_EXPOSURE_PROPERTY_NAME,
-          1, items, values);
-      } else {
-        indigo_device_disconnect(client, CCD_SIMULATOR);
-      }
-    }
-    return INDIGO_OK;
-  }
+  printf("update property: device = %s, name = %s\n",
+    property->device, property->name);
   return INDIGO_OK;
 }
 
@@ -118,27 +55,20 @@ int main(int argc, const char* argv[]) {
   indigo_main_argv = argv;
   static const char* items[] = { CCD_EXPOSURE_ITEM_NAME };
   static double values[] = { 3.0 };
-  // indigo_client* client;
 
   indigo_set_log_level(INDIGO_LOG_INFO);
   indigo_start();
 
   indigo_driver_entry* driver;
   indigo_attach_client(&client);
-  if(indigo_load_driver("indigo_ccd_simulator", true, &driver) == INDIGO_OK) {
-    while(count > 0) {
-      indigo_usleep(ONE_SECOND_DELAY);
-    }
-  }
-
-  indigo_change_number_property(&client, CCD_SIMULATOR, CCD_EXPOSURE_PROPERTY_NAME,
-          1, items, values);
-  indigo_usleep(ONE_SECOND_DELAY);
-  indigo_usleep(ONE_SECOND_DELAY);
-  indigo_usleep(ONE_SECOND_DELAY);
-  indigo_usleep(ONE_SECOND_DELAY);
-  indigo_usleep(ONE_SECOND_DELAY);
-  indigo_usleep(ONE_SECOND_DELAY);
+  bool myok = indigo_load_driver("indigo_ccd_sbig", true, &driver);
+  indigo_usleep(8000000);
+  printf("Connecting to the SBIG Ethernet Device now\n");
+  indigo_device_connect(&client, SBIG_ETHERNET);
+  indigo_usleep(8000000);
+  printf("Disconnecting from the SBIG Ethernet Device now\n");
+  indigo_device_disconnect(&client, SBIG_ETHERNET);
+  indigo_usleep(2000000);
 
   indigo_remove_driver(driver);
   indigo_detach_client(&client);

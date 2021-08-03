@@ -1,0 +1,6 @@
+{
+  "files.associations": {
+    "*.md": "markdown",
+    "indigo_bus.h": "c"
+  }
+}
