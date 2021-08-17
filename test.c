@@ -6,6 +6,7 @@
 #include <signal.h>
 #include <indigo/indigo_bus.h>
 #include <indigo/indigo_client.h>
+#include "MQTTClient.h"
 
 #define SBIG_CCD "SBIG ST-10 CCD #0"
 #define SBIG_GUIDER_CCD "SBIG ST-10 Guider CCD #0"

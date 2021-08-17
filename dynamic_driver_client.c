@@ -21,8 +21,8 @@ static indigo_result client_attach(indigo_client* client) {
 static indigo_result client_define_property(indigo_client* client,
   indigo_device* device, indigo_property* property,
   const char* message) {
-  printf("prop-device = %s\n", property->device);
-  printf("prop-name = %s\n", property->name);
+  //printf("prop-device = %s\n", property->device);
+  //printf("prop-name = %s\n", property->name);
   if(strcmp(property->device, SBIG_CCD))
     return INDIGO_OK;
   if(!strcmp(property->name, CONNECTION_PROPERTY_NAME)) {
@@ -30,7 +30,8 @@ static indigo_result client_define_property(indigo_client* client,
       connected = true;
       indigo_log("already connected...");
       static const char* items[] = { CCD_EXPOSURE_ITEM_NAME };
-      static double values[] = { 0.05 };
+      static double values[] = { 10.5 };
+      printf("starting 10.5 second exposure\n");
       indigo_change_number_property(client, SBIG_CCD, CCD_EXPOSURE_PROPERTY_NAME,
         1, items, values);
     } else {
@@ -40,8 +41,8 @@ static indigo_result client_define_property(indigo_client* client,
     }
   }
   if(!strcmp(property->name, CCD_IMAGE_PROPERTY_NAME)) {
-    printf("version = %u\n", device->version);
-    printf("version = %u\n", INDIGO_VERSION_2_0);
+    //printf("version = %u\n", device->version);
+    //printf("version = %u\n", INDIGO_VERSION_2_0);
     if(device->version >= INDIGO_VERSION_2_0) {
       printf("enable blob URL\n");
       indigo_enable_blob(client, property, INDIGO_ENABLE_BLOB_URL);
@@ -62,17 +63,21 @@ static indigo_result client_define_property(indigo_client* client,
 static indigo_result client_update_property(indigo_client* client,
   indigo_device* device, indigo_property* property,
   const char* message) {
-  printf("prop-device = %s\n", property->device);
-  printf("prop-name = %s\n", property->name);
+  //printf("prop-device = %s\n", property->device);
+  //printf("prop-name = %s\n", property->name);
+  if(!strcmp(property->name, CCD_EXPOSURE_PROPERTY_NAME)) {
+      indigo_log("exposure, value is %g.", property->items[0].number.value);
+  }
   if(strcmp(property->device, SBIG_CCD))
     return INDIGO_OK;
   static const char* items[] = { CCD_EXPOSURE_ITEM_NAME };
-  static double values[] = { 0.05 };
+  static double values[] = { 10.5 };
   if(!strcmp(property->name, CONNECTION_PROPERTY_NAME) && property->state == INDIGO_OK_STATE) {
     if(indigo_get_switch(property, CONNECTION_CONNECTED_ITEM_NAME)) {
       if(!connected) {
         connected = true;
         indigo_log("connected...");
+        printf("starting 10.5 second exposure\n");
         indigo_change_number_property(client, SBIG_CCD, CCD_EXPOSURE_PROPERTY_NAME,
           1, items, values);
       }
