@@ -28,4 +28,4 @@ test: test.c
 .PHONY: clean
 
 clean:
-	rm test
+	rm test dynamic_driver_client
